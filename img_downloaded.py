@@ -1,6 +1,9 @@
 # img_downloaded.py
 # ※※　実行時、python img_downloaded.py "Park Jimin" "Kim Taehyung" ...　のようにキーワードを指定して実行する　※※
 # 必要なライブラリのインポート
+
+# face_recognitionの顔検出方法を変更する:model='hog'⇒model='cnn'に変更
+
 import os
 import sys
 import time
@@ -91,9 +94,21 @@ for name in keywords:
             urlretrieve(url, filepath)
             time.sleep(interval)
 
+        except Exception as e:
+            with open(error_log, 'a') as f:
+                f.write(f"Failed to download {url}: {e}\n")
+            print(f"Failed to process {url}: {e}")
+
+    # 既存の画像をフィルタリング
+    print(f"Re-filtering images in directory: {savedir}")
+    existing_images = [f for f in os.listdir(savedir) if f.endswith('.jpg')]
+
+    for image_file in existing_images:
+        filepath = os.path.join(savedir, image_file)
+        try:
             # 顔認識によるフィルタリング
             image = face_recognition.load_image_file(filepath)
-            face_locations = face_recognition.face_locations(image)
+            face_locations = face_recognition.face_locations(image, model='cnn')
 
             if len(face_locations) == 1:
                 # 顔が1つだけの場合、フィルタ済みフォルダにコピー
@@ -105,8 +120,6 @@ for name in keywords:
                 print(f"Skipped: {filepath} (faces detected: {len(face_locations)})")
 
         except Exception as e:
-            with open(error_log, 'a') as f:
-                f.write(f"Failed to download {url}: {e}\n")
-            print(f"Failed to process {url}: {e}")
+            print(f"Failed to process {filepath}: {e}")
 
-print("All downloads complete.")
+print("All downloads and filtering complete.")
